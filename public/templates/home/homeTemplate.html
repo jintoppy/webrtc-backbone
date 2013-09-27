@@ -1,0 +1,35 @@
+<div class="main">
+
+<video id="localVideo" width="400" height="400"></video>
+
+<video id="remoteVideo" width="400" height="400"></video>
+
+<button id="callBtn" class="btn btn-primary">Call</button>  
+
+</div>
+
+
+
+
+<!-- Modal for New Student -->
+
+	<div class="modal fade" id="newStudentRequestModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">Class created status</h4>
+        </div>
+        <div class="modal-body">
+          
+        </div>
+        <input type="hidden" id="classid" />
+        <input type="hidden" id="studentname" />
+        <div class="modal-footer">
+        	<button type="button" id="acceptStudentBtn" class="btn btn-primary">Accept</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Reject</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
