@@ -6,8 +6,8 @@ define([
   var OwnerModel = Backbone.Model.extend({
 
   		defaults : {
-          name : "Jinto Jose",
-          email: "jintoppy@gmail.com"
+          name : "Peer Hackers",
+          email: "visualizationpractise@sapient.com"
       },  
 
       initialize: function( options ) {

@@ -30,7 +30,6 @@ html, body {
   height: auto !important;
   height: 100%;
   margin: 0px 0px -100px 0px;
-  padding-right: 0;
 }
 
 .push, footer {
@@ -55,6 +54,10 @@ html, body {
 
 }
 
+.well {
+  background-color: #7D1935;
+}
+
 .glyphicon{
   color: #FFF;
 }
@@ -71,3 +74,52 @@ html, body {
 }
 
  /****** Login ***** */
+
+ /********SideView*******/
+
+#sidebar .tutor-video-section,
+#sidebar video{
+  width: 100%; 
+}
+
+#sidebar video{
+
+}
+
+#sidebar .list-group-item
+{
+  background-color: #7D1935;
+  color: #fff;
+}
+
+@keyframes         blink { 0% {opacity:0;} 50% {opacity:1;} 100% {opacity:0;} }
+@-moz-keyframes    blink { 0% {opacity:0;} 50% {opacity:1;} 100% {opacity:0;} }
+@-webkit-keyframes blink { 0% {opacity:0;} 50% {opacity:1;} 100% {opacity:0;} }
+
+#sidebar .list-group-item.active{
+  animation:         blink 1000ms linear infinite;
+  -moz-animation:    blink 1000ms linear infinite; 
+  -webkit-animation: blink 1000ms linear infinite; 
+}
+
+
+
+
+ /********SideView*******/
+
+  /********HomeView*******/
+
+  #homePage #editorwindow textarea{
+     -webkit-box-sizing: border-box;
+       -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            width: 100%;
+    background-color: #535353;
+    color: #fff;
+  }
+
+  #homePage #qnaScreenVideo{
+    width: 100%;
+  }
+
+   /********HomeView*******/

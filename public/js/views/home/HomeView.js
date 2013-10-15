@@ -7,22 +7,40 @@ define([
   'domain/MessageBus',
   'domain/Repository',
   'services/WebRTCService',
+  'firebase',
   'text!templates/home/homeTemplate.html'
-], function($, _, Backbone, Bootstrap, SidebarView, MessageBus, Repository, WebRTCService, homeTemplate){
+], function($, _, Backbone, Bootstrap, SidebarView, MessageBus, Repository, WebRTCService, FireBase, homeTemplate){
 
   var HomeView = Backbone.View.extend({
     el: $("#page"),
 
     events: {
       'click #acceptStudentBtn': 'onAcceptStudent',
-      'click #callBtn': 'onPeerCall'
+      'keyup #editorwindow textarea': 'onEditorContentChange'
+    },
+
+    onEditorContentChange: function(){
+      if(Repository.isClassStarted()){
+        var editorContent = $('#editorwindow textarea').val();
+        Repository.sendClassContent(editorContent);
+      }
+      
     },
 
     initialize: function(){
       this.checkForSocketEvents();
-      this.checkForWebRTCEvents();
       WebRTCService.createPeerConnection();
+      MessageBus.on('onQNARemoteStreamReceived', this.gotQNARemoteStream);
+      MessageBus.on('qnASessionEnd', this.onQnASessionEnd);
       this.setUpLocalScreenSharing();
+      $('#classIdTitle').val("ClassId is "+ Repository.getClassId());
+
+    },
+
+    onQnASessionEnd: function(){
+      var qnaScreenVideo = document.querySelector("#qnaScreenVideo");
+      qnaScreenVideo.style.display = 'none';
+      Repository.endQnASession();
     },
 
     checkForSocketEvents: function(){
@@ -36,19 +54,20 @@ define([
           modal.modal('show');
       });
 
+      MessageBus.on('editorContentChanged', function(data){
+          $('#editorwindow textarea').val(data);
+      });
+
     },
 
-    checkForWebRTCEvents: function(){
-        MessageBus.on('onGetLocalUserScreenSuccess',this.gotLocalStream);
-        MessageBus.on('onGetLocalUserScreenError',this.errorInGettingLocalStream);
-        MessageBus.on('onRemoteStreamReceived', this.gotRemoteStream);
-    },
+    gotQNARemoteStream: function(stream){
+      if(Repository.isTutor()){
+          var qnaScreenVideo = document.querySelector("#qnaScreenVideo");
+          qnaScreenVideo.style.display = 'block';
+          qnaScreenVideo.src = window.URL.createObjectURL(stream);
+          qnaScreenVideo.play();        
 
-    gotRemoteStream: function(stream){
-      console.log('successcallback');
-      var remotevideo = document.querySelector("#remoteVideo");
-      remotevideo.src = window.URL.createObjectURL(stream);
-      remotevideo.play();
+      }
     },
 
     onAcceptStudent: function(){
@@ -60,45 +79,35 @@ define([
         classid: classid
       };
 
+      var _firebaseRef = new Firebase('https://haxter.firebaseio.com/newUser');
+      _firebaseRef.set(new Date().toTimeString());
+
       Repository.responseToRequestToJoinFromStudent(true,inputdata);
+      
       WebRTCService.createOffer();
 
       $('#newStudentRequestModal').modal('hide');
     },
 
     render: function(){
-      
+      console.log('home view render')
       $('.menu li').removeClass('active');
       $('.menu li a[href="#"]').parent().addClass('active');
       this.$el.html(homeTemplate);
 
-      var sidebarView = new SidebarView();
-      sidebarView.render();
+      var sidebar = document.getElementById('sidebar');
+      if(!sidebar){
+        var sidebarView = new SidebarView();
+        sidebarView.render(); 
+      }
+      
+      
  
-    },
-
-    onPeerCall: function(){
-              // the famous Google STUN server for signaling
-      var configuration = {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]},
-        mediaConstraints = {
-            'mandatory': {
-                'OfferToReceiveAudio':true, 
-                'OfferToReceiveVideo':true
-            }
-        };
-        //WebRTCService.
     },
 
     setUpLocalScreenSharing: function(){
       var that = this;
       WebRTCService.getLocalUserMedia();
-    },
-
-    gotLocalStream: function(stream){
-      console.log('successcallback');
-      var localvideo = document.querySelector("#localVideo");
-      localvideo.src = window.URL.createObjectURL(stream);
-      localvideo.play();
     },
 
     errorInGettingLocalStream: function(){

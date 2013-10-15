@@ -28,6 +28,7 @@ var tutors={};
 	var students={};
 	var studentsInWaiting={};
 	var test='';
+	var studentsWhoAreAskingQuestion = {};
 
 io.sockets.on('connection', function(socket){
 	//console.log('current sockets are '+ io.sockets.clients());
@@ -40,6 +41,12 @@ io.sockets.on('connection', function(socket){
 		socket.broadcast.emit('PeerMessageFromSocket', data);
 	});
 
+	socket.on('QNAPeerMessage', function(data){
+		console.log('rtcmessage is ' + data);
+		socket.broadcast.emit('QNAPeerMessageFromSocket', data);
+	});
+
+	
 	socket.on('joinClassRequest', function(data){
 		if(tutors[data.classid]){
 			var tutorsocket = tutors[data.classid].socketInfo;
@@ -104,6 +111,38 @@ io.sockets.on('connection', function(socket){
 	socket.on('send',function(data){
 		io.sockets.in(roomglobal).emit('message',data);
 	});
+
+
+	socket.on('sendClassData', function(data){
+		io.sockets.in(roomglobal).emit('editorContentChanged',data.editorContent);
+	});
+
+	socket.on('studentQuestion', function(data){
+		console.log('studentQuestion class id is '+ data.classid);
+		console.log(tutors[data.classid]);
+		console.log(tutors);
+		if(tutors[data.classid])
+		{
+			console.log('tutor still there in studentQuestion');
+			var tutorsocket = tutors[data.classid].socketInfo;
+			tutorsocket.emit('studentAskingQuestion', {classid: data.classid, studentname: data.name, studentId: socket.id });
+
+			if(studentsWhoAreAskingQuestion[data.classid]){
+				studentsWhoAreAskingQuestion[data.classid].push({name: data.name, socketInfo: socket, classid: data.classid, id: socket.id });
+			}
+			else{
+				var newStudentsAskingQuestions= [];
+				newStudentsAskingQuestions[0] = {name: data.name, socketInfo: socket, classid: data.classid, id: socket.id };
+				studentsWhoAreAskingQuestion[data.classid] = newStudentsAskingQuestions;
+			}
+
+		}
+	});
+
+		socket.on('endQnASession',function(data){
+
+			io.sockets.in(roomglobal).emit('qnASessionEnded', data);
+		});
 
 
 

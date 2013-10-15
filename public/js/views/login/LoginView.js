@@ -31,6 +31,8 @@ define([
           console.log(data);
           if(data.message === 'success'){
               new HomeView().render();
+              Repository.setAsTutor();
+              MessageBus.trigger("classCreated");
           }
           else
           {
@@ -54,7 +56,7 @@ define([
     },
 
     triggerJoinClassRequest: function(){
-      var classId= $('#txtClassId').val(), name = "Jinto Jose"+ new Date().getTime();
+      var classId= $('#txtClassId').val(), name = "student1";
       Repository.joinClass(classId, name);
     },
 

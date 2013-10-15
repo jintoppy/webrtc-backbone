@@ -1,11 +1,26 @@
+<div id="sidebar">
+
 <div class="list-group">
 
 <% _.each(students, function(student) { %> 
-<a href="#" class="list-group-item active">
+<a href="#" class="list-group-item">
+
+<input type="hidden" class="studentid" value="<%= student.id %>">
 
 <span class="glyphicon glyphicon-user"></span>	
 	<%= student.name %></li> 
-
+</a>
 <% }); %>
+
+</div>
+
+<div class="tutor-video-section">
+<video id="tutorVideo"> </video>
+
+</div>
+<div class="student-video-section">
+	<video id="localVideo"></video>
+</div>
+
 
 </div>

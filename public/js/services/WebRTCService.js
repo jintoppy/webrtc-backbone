@@ -1,14 +1,16 @@
 define([
 	'domain/MessageBus',
-	'services/SocketService'
+	'services/SocketService',
+    'domain/Repository'
 	],
-	function(MessageBus, SocketService) {
+	function(MessageBus, SocketService, Repository) {
     'use strict';
 
     if (!window.io) {
         return false;
     }
     var localPeerConnection;
+    var localPeerConnectionForScreen;
     window.RTCPeerConnection  = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
 
     window.RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
@@ -23,27 +25,104 @@ define([
 
     function getLocalUserMedia(){
 		var constraints = {
-			//audio: true, 
-			video: {
-				mandatory: {
-					chromeMediaSource: 'screen'
-				}
-			}	
+            video: true,
+			audio: true	
 		};
 		//_getUserMedia(constraints, successCallback, errorCallback);    	
 		navigator.getUserMedia(constraints, 
 		function(stream){ 
-			MessageBus.trigger('onGetLocalUserScreenSuccess', stream); 
+			MessageBus.trigger('onGetLocalUserCameraSuccess', stream); 
 		}, 
 		function(error){
-			MessageBus.trigger('onGetLocalUserScreenError', error);
+			MessageBus.trigger('onGetLocalUserCameraError', error);
 		}
 		);    	
     }
 
-    MessageBus.on('onGetLocalUserScreenSuccess', function(stream){
+    function getStudentScreen(){
+        var constraints = {
+            /*video: true*/
+            //audio: true, 
+            video: {
+                mandatory: {
+                    chromeMediaSource: 'screen'
+                }
+            }   
+        };
+        //_getUserMedia(constraints, successCallback, errorCallback);       
+        navigator.getUserMedia(constraints, 
+        function(stream){ 
+            MessageBus.trigger('onGetLocalUserScreenSuccess', stream); 
+        }, 
+        function(error){
+            MessageBus.trigger('onGetLocalUserScreenError', error);
+        }
+        );  
+    }
+
+    MessageBus.on('onGetLocalUserCameraSuccess', function(stream){
+
     	localPeerConnection.addStream(stream);
     }); 
+
+    MessageBus.on('onGetLocalUserScreenSuccess', function(stream){
+        
+        createQuestionAnswerConnection();
+        localPeerConnectionForScreen.addStream(stream);
+    }); 
+
+    function createQuestionAnswerConnection(){
+        localPeerConnectionForScreen = new RTCPeerConnection(configuration);
+        localPeerConnectionForScreen.onicecandidate = gotIceCandidateForQuestionAnswerConnection;
+        localPeerConnectionForScreen.onaddstream = gotStreamForQuestionAnswerConnection;
+        console.log('createPeerConnection');        
+    }
+
+    function setRemoteDescriptionForQnA(message){
+        localPeerConnectionForScreen.setRemoteDescription(new RTCSessionDescription(message), 
+                    onSetSessionDescriptionSuccess, onSetSessionDescriptionError);
+    }
+
+    function gotIceCandidateForQuestionAnswerConnection(event){
+        console.log('gotIceCandidateForQuestionAnswerConnection');
+        if(!event.candidate){
+            return;
+        }
+        var candidate = {
+                 type: 'candidate',
+                 label: event.candidate.sdpMLineIndex,
+                 id: event.candidate.sdpMid,
+                 candidate: event.candidate.candidate};
+
+        SocketService.emit('QNAPeerMessage',candidate);
+    }
+
+    function gotStreamForQuestionAnswerConnection(){
+        MessageBus.trigger('onQNARemoteStreamReceived', event.stream);
+    }
+
+    function setLocalAndSendMessageForQnA(sessionDescription) {
+      //sessionDescription.sdp = maybePreferAudioReceiveCodec(sessionDescription.sdp);
+      localPeerConnectionForScreen.setLocalDescription(sessionDescription,
+           onSetSessionDescriptionSuccess, onSetSessionDescriptionError);
+      SocketService.emit('QNAPeerMessage',sessionDescription);
+    }
+
+    function doAnswerForQnA(){
+        localPeerConnectionForScreen.createAnswer(setLocalAndSendMessageForQnA, onCreateSessionDescriptionError, sdpConstraints);
+    }
+
+    function createOfferForQnA(){
+        console.log('createOffer');
+        createQuestionAnswerConnection();
+        localPeerConnectionForScreen.createOffer(setLocalAndSendMessageForQnA, onCreateSessionDescriptionError, sdpConstraints);
+    }
+
+    function addIceCandidateForQnA(message){
+        var candidate = new RTCIceCandidate({sdpMLineIndex: message.label,
+                                         candidate: message.candidate});
+        localPeerConnectionForScreen.addIceCandidate(candidate);
+    }    
 
     function createPeerConnection(){
     	
@@ -52,6 +131,26 @@ define([
     	localPeerConnection.onaddstream = gotStream;
     	console.log('createPeerConnection');
 
+    }
+
+    function endAllConnections(){
+        if(localPeerConnection){
+            localPeerConnection.close();
+            localPeerConnection = null;
+        }
+        if(localPeerConnectionForScreen){
+            localPeerConnectionForScreen.close();
+            localPeerConnectionForScreen = null;
+        }
+        
+    }
+
+    function endQnASession(){
+        if(localPeerConnectionForScreen){
+            localPeerConnectionForScreen.close();
+            localPeerConnectionForScreen = null;            
+        }
+        
     }
 
     function createOffer(){
@@ -100,6 +199,7 @@ define([
     	localPeerConnection.createAnswer(setLocalAndSendMessage, onCreateSessionDescriptionError, sdpConstraints);
     }
 
+
     function addIceCandidate(message){
     	var candidate = new RTCIceCandidate({sdpMLineIndex: message.label,
                                          candidate: message.candidate});
@@ -113,11 +213,18 @@ define([
     
     return {
     	getLocalUserMedia: getLocalUserMedia,
+        getStudentScreen: getStudentScreen,
     	addIceCandidate: addIceCandidate,
     	setRemoteDescription: setRemoteDescription,
     	createPeerConnection: createPeerConnection,
     	createOffer: createOffer,
-    	doAnswer: doAnswer
+    	doAnswer: doAnswer,
+        doAnswerForQnA: doAnswerForQnA,
+        createOfferForQnA: createOfferForQnA,
+        setRemoteDescriptionForQnA: setRemoteDescriptionForQnA,
+        addIceCandidateForQnA: addIceCandidateForQnA,
+        endAllConnections: endAllConnections,
+        endQnASession: endQnASession
     }
 
 });
